@@ -107,6 +107,29 @@ export class Validation<Out> {
 				return false;
 			},
 			*/
+
+			/**
+			 *
+			 * @param input What’s being validated. Note that validationdoesn]t do any parsing or formatting.
+			 *              Those need to be handled up- and downstream, respectively.
+			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
+			 * @param constraints Optional declarative validation rules. These are ANDed together.
+			 * @returns A type guard that `input` is, in fact, a `string`. This is not _really_ true
+			 *          because that validation here can be much more strict than any `string`,
+			 *          e.g. length or regular expression matching. However, downstream should continue to treat
+			 *          the `input` as invalid and thus `unknown` typed.
+			 *
+			 * @example ```
+			 *   if(validateion.test.is_string(input, '«This value» must exist and be a string')) {
+			 *     // Other validation or formatting logic can now safely assume that `input` is a `string`
+			 *   }
+			 * ```
+			 * @example ```
+			 *   if(validateion.test.is_string(input, '…'), {length: {min: 3, issue: 'At least 3'}}) {
+			 *     // `input` is `string` and at least three characters in length
+			 *   }
+			 * ```
+			 */
 			is_string(
 				input: unknown,
 				issue: Issueish,
