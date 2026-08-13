@@ -108,6 +108,80 @@ describe('test.has_string', () => {
 		).toBe(false);
 		expect(validation.first()?.message).toBe('name too short');
 	});
+
+	it('records the property name as the issue path', () => {
+		const validation = new Validation();
+		validation.test.has_string({}, 'name', 'name is required');
+		expect(validation.first()?.path).toEqual(['name']);
+
+		validation.test.has_string({ name: 'A' }, 'name', 'name is required', {
+			length: { min: 2, issue: 'name too short' }
+		});
+		expect(validation.issues(['name'])).toHaveLength(2);
+	});
+});
+
+describe('multiple constraints', () => {
+	it('records one issue per failing constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('123', 'must be a string', {
+			length: { min: 5, issue: 'too short' },
+			match: { regexp: /^[a-z]+$/, issue: 'letters only' },
+			list: { values: ['red', 'green', 'blue'], issue: 'not an allowed color' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.length).toBe(3);
+		expect(validation.issues().map((issue) => issue.message)).toEqual([
+			'too short',
+			'letters only',
+			'not an allowed color'
+		]);
+	});
+
+	it('only records issues for the constraints that actually fail', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('purple', 'must be a string', {
+			length: { min: 3, max: 10, issue: 'wrong length' },
+			match: { regexp: /^[a-z]+$/, issue: 'letters only' },
+			list: { values: ['red', 'green', 'blue'], issue: 'not an allowed color' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.length).toBe(1);
+		expect(validation.first()?.message).toBe('not an allowed color');
+	});
+
+	it('passes with zero issues when every constraint is satisfied', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('red', 'must be a string', {
+			length: { min: 1, max: 10, issue: 'wrong length' },
+			match: { regexp: /^[a-z]+$/, issue: 'letters only' },
+			list: { values: ['red', 'green', 'blue'], issue: 'not an allowed color' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.length).toBe(0);
+	});
+
+	it('combines a failing constraint with multiple issues from a custom validator', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('123', 'must be a string', {
+			length: { min: 5, issue: 'too short' },
+			custom: {
+				validate: () => new Validation().add('custom issue A', 'custom issue B')
+			}
+		});
+		expect(ok).toBe(false);
+		expect(validation.length).toBe(3);
+	});
+
+	it('has_string records one issue per failing constraint, all at the property path', () => {
+		const validation = new Validation();
+		const ok = validation.test.has_string({ name: '123' }, 'name', 'name is required', {
+			length: { min: 5, issue: 'too short' },
+			match: { regexp: /^[a-z]+$/, issue: 'letters only' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.issues(['name'])).toHaveLength(2);
+	});
 });
 
 describe('shallow nested objects', () => {
@@ -161,10 +235,10 @@ describe('shallow nested objects', () => {
 		});
 
 		expect(validation.has()).toBe(true);
-		expect(validation.has([])).toBe(true); // top-level 'name' issue
-		expect(validation.has(['customer'])).toBe(true);
+		expect(validation.has(['name'])).toBe(true); // top-level 'name' issue
+		expect(validation.has(['customer', 'name'])).toBe(true);
 
-		const nested = validation.issues(['customer']);
+		const nested = validation.issues(['customer', 'name']);
 		expect(nested).toHaveLength(1);
 		expect(nested[0]?.message).toBe('Customer name is required');
 	});

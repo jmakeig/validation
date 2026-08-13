@@ -113,6 +113,7 @@ export class Validation<Out> {
 			 * @param input What’s being validated. Note that validationdoesn]t do any parsing or formatting.
 			 *              Those need to be handled up- and downstream, respectively.
 			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
+			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
 			 * @param constraints Optional declarative validation rules. These are ANDed together.
 			 * @returns A type guard that `input` is, in fact, a `string`. This is not _really_ true
 			 *          because that validation here can be much more strict than any `string`,
@@ -136,7 +137,6 @@ export class Validation<Out> {
 				constraints: StringConstraints = {}
 			): input is string {
 				if (undefined === input || null === input || 'string' !== typeof input) {
-					// TODO: path and code too
 					that.add(issue);
 					return false;
 				}
@@ -170,13 +170,26 @@ export class Validation<Out> {
 				that.merge(local);
 				return !local.has();
 			},
+			/**
+			 * Delegates to `is_string` against a scratch `Validation` instance, then merges its
+			 * issues (the missing/wrong-type check, plus any constraint failures) into this
+			 * instance scoped under `key` — so every issue produced for this property, however
+			 * many constraints fired, lands at the same `[key]` path.
+			 */
 			has_string<T extends object, K extends string>(
 				input: T,
 				key: K,
 				issue: Issueish,
 				constraints: StringConstraints = {}
 			): input is T & Record<K, string> {
-				return that.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
+				const local = new Validation();
+				local.test.is_string(
+					(input as Record<string, unknown>)[key],
+					issue,
+					constraints
+				);
+				that.merge(local, [key]);
+				return !local.has();
 			}
 			/*
 			is_number(
