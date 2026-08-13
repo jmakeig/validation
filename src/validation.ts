@@ -183,11 +183,7 @@ export class Validation<Out> {
 				constraints: StringConstraints = {}
 			): input is T & Record<K, string> {
 				const local = new Validation();
-				local.test.is_string(
-					(input as Record<string, unknown>)[key],
-					issue,
-					constraints
-				);
+				local.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
 				that.merge(local, [key]);
 				return !local.has();
 			}

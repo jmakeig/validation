@@ -1,8 +1,5 @@
 {
-  "permissions": {
-    "allow": [
-      "Bash(npm run *)",
-      "Bash(rm -rf dist)"
-    ]
-  }
+	"permissions": {
+		"allow": ["Bash(npm run *)", "Bash(rm -rf dist)"]
+	}
 }
