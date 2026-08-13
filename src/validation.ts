@@ -176,13 +176,7 @@ export class Validation<Out> {
 				issue: Issueish,
 				constraints: StringConstraints = {}
 			): input is T & Record<K, string> {
-				if (
-					key in input &&
-					that.test.is_string((input as Record<string, unknown>)[key], issue, constraints)
-				) {
-					return true;
-				}
-				return false;
+				return that.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
 			}
 			/*
 			is_number(
