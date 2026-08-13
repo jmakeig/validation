@@ -1,0 +1,44 @@
+{
+	"name": "@jmakeig/validation",
+	"version": "0.1.0",
+	"description": "Data validation for the browser and Node.js",
+	"type": "module",
+	"main": "./dist/index.js",
+	"types": "./dist/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js"
+		}
+	},
+	"files": [
+		"dist"
+	],
+	"sideEffects": false,
+	"engines": {
+		"node": ">=22"
+	},
+	"scripts": {
+		"build": "vite build",
+		"dev": "vite build --watch",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"coverage": "vitest run --coverage",
+		"check": "tsc --noEmit",
+		"format": "prettier --write . | grep -v unchanged",
+		"format:check": "prettier --check .",
+		"prepublish": "npm run check && npm run test && npm run build"
+	},
+	"devDependencies": {
+		"@vitest/coverage-v8": "4.1.10",
+		"prettier": "3.9.6",
+		"typescript": "6.0.3",
+		"vite": "8.2.1",
+		"vite-plugin-dts": "5.0.3",
+		"vitest": "4.1.10"
+	},
+	"license": "Apache-2.0",
+	"publishConfig": {
+		"access": "public"
+	}
+}

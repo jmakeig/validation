@@ -1,0 +1,411 @@
+// https://www.typescriptlang.org/play/?declaration=false&target=9&ts=5.9.3#code/PTAEFUBcEsBtpgUwM4ChIE8AOjQDkBXWWAQwCNZEAeAFQD5QBeUG0AH1ADsjYBuVVCFABRTjCRpMOEWIQYqeEgFtciAB6REnACbJQySACdonAOYNmAb1QBIQ4hLaA9p1gZQAbQAKoE-mWIALoAXPpGJqb8AL6gAGSg1jakZIiwoQbGZvw2nAHp4VmoUfxSuABKiABmCgGg6po6ehkRFjLi8ooqdPzo2LgAwgQGTiqGTG1yVADkAMZDkCOIhlMM8Yn2ptAuoYTE5JTTeE6GkAAWylPsoFPCALLCAIKXHFMAUg9eD-3P1wAyJJALt1bMhEKYVGIdjx9tQpgBlVKIGaQH43MRLLDGUGo-rHLDHAGIVFw24AIRW0R6pVAAHVjgBrWBORzjUTtaYAdwZTMcKziCVsc2Go1CFWqs3mi2WwJsyGgAC9EKFuEoUmMONxiJSBEIAGokeDaAFbTi9aReAGncYVRwuNwPQyGEjyLyGJw4E4YADSiAwwNQJk0hkqJBmuAAkshkARcOsHM5XO4VFGSKYlWFMpFbPZbYnQFhLQB+UIWs7ZHMJtygGZObSIYsZiLRATU-WGwnaKgAeQIkAstg4llAFbt7iNgNCPcgvGH8dHoAAbgboOOTQ3OIgF0tQFEBwlZ7mq+OSKECJx6ZwnBzODOR3ml+2YNtQG2V8aXN3ewxigIZqQoy+y6rh+U4MIkwAAFQQbYoAQSwKCQHoHKnIgZzbiQs7RrAkC+HoJgPiuAB0oBeiY2igE4lSgByiDQIY5FnACviQIAmAR6GhXBgsaW4ADQwXBZC9qAShOAYoBDKmuAcnAsCgCkoALKA5w6JQoAYQABq+46INo6lsb4nAEeRBiEoR-HACCgIwDMuEAPr4UBAAU9hYZAp7npe14AJShC5RA4dAehDneVZGe+nChFp4VUGeF5Xpw34CjYdioQQhicKAjm2MlZ51pUJg6aAACEjDMH52FxLE2U5DwxWlZh-mVdVUxOGQABWSIokw9WlJRDUVbEVXJTYUxhU+nCXH45U4YN1XTYRY0mgZJmcGGfVReN2Vedku62AAxIF0YoKEkZHR4gTjOd2SQdBNiwf4yYFmGoCVMcdRqIFDRhsA1IzChMz0sgxHqYFtkQepwmoactZ6H9SL0gpKH5sYSgINAW4KX0ak6GpUZLDhHGlGZd1weGVEIPpl6QDxanaLo2O4UdClOIjuBzI6WgBZwK1hsD5zIGDEMqGcMOgM4rP6AEfEk3JQmvWMGGYu6+PuC4Esg5wWC9upxOwRZKWHu4mgGNkNbc0YBDIscjleUlNhm2JjE4cwZyBdkNiu0DxvO3bNig61HXIllw1+5rvbuXF17S8NybIJJJ1RjGHhTLHklTIE0fJUrHqYA2rrK56PruBwpanJn9u1vWCdnbMlfp9VPkGVrAV6AHnW+37VGOblVQFeRJXMCYzeVVwtUD03QmDdcbfIpcpUu30fVD72tv2JAaUZRbiDu8lTuEY42iOanaY09nKs0zWdbbdVKXr+lL0GqCO9RJn-O2TPkC0O9DT0x-NNet-LQ9NmhmDoMHYay83IsHLvSX0oQvTl2PumU6ScU4oDjmmdO5cz6ehLG6HO3pfRXFLpdWBGAM430vlXUAKDEDJyofXYajdIG4RYPyCoNZ6JUAQY2UBHchAVFCOpRyLCSB6A4ccTsIDTA01ip5BKXkPA4MwIEdSN8hDCC3IYdwrwSBLjhDMYwWAcIf30AQLA+ITh6BIIYMgCAnTaN4aYAAtGQtSMwwwASYoYM8MAVDERtORRW+CVaIyYs4FAE0cLqE+tjciGAnAEFAGmHCPd8obm0DTKmalqxOmQKcYmw0hDqTkfFCGgUJYLCwJjHAoQKZNGNMgfKhUyDuHgEGA0VYSCcHcA+GMNMTB-gINoCIoASk6F7hknW6iwBwhZoAHAIyIxLMIjCppjWnY3cNI5GtZLYoDGaU686lAC4BKw9SW8IbyzqFo1W7VOo0wNByZ0QMZksFOBUiJyBOAsRwmI0EJxNmuxWSGWAoI1JkESThHxsgVD6EQEobp1lkA03nK0gsUZRkYQyJbO+BpkkEBsYixAuAaB9AMUYnCMxulTBMWhQw0kwVaOgJUdwTEaxKCwHAXAfjECFOSsyzKN8bBuL8Cw2aIcPbnEgIRb2hF-Z3KDiIsOvzxFIkkVQaRsiPLxToIoshGdIYphPjsghF9K5eRvrbRIIc14bwUj47eN9dw2tSvfEFT9qov2qqDaR4D+XKojvIxB6D440MTnQtBRqiQUJDsojAecQmFyISXS05cqENlofQuugQG51OVaw7Z1r+VdzSX3Oqg981T01LJceYr4hTGkXPHqi9ybKtXq6zeDqd6SoBPvOmR8Q3GrjWaq+3bbVusfo64aXrhpv2kV-eoQDW4KupiRQBjQnFgJvpA0INAYFwJIsGqN1dUFIKwTfONeCC6YCLsQy0pDfQxuGumk9EaGE5qYXm4eFTWDxAkVwnh0iwLbq7kKkVGU61Cr3rKn1BRTCOSVcPMRoB-1SLg1qyOCiPD6ppkg0+ibMAjsQBakOVqhXjs7TGbtzrhoUYfqCqdyUZ38oFiqNUfrQ7N0DfFI9GDkHhuTmep9WcCPxqvQQ29KazhpsrhmgTtc6yMOSsw-NFS2PbiLZ3QVErS0ZPLRPGaQ0Q7Vv05BiVUx1PLG6gvHAS9K1GeGkVQgqolhyuQIoPAiGV6Wo7rfO1W9qM3z3gfAdUb8PXowER6+Lq74ZXdYxmwzGbBv0swujQS6KIrv-uu4BcGt0hx3dAm+ZD4G8dDZmyNfHz2xtE+JlWknQAkOYNhx9Mm6xyZru+3NBnWG-pQ2qgDNMgMdwFRx4VRDRX2ag1KmVCE3O2Uswh0RqrOFoczBh+RuqWvkNw4OxA4XTXVnNT5zTfn74BadTfOj8Xn6Z1BtpDjhXDmcDK2mV9gm9vVeGnGhNEWGulza9QirXXP09bUwQFzYxNOjaFbpwqtapsSpMwj4e4qCuqfNt0taVEAAihImoSqcxDtUbmPNeelSkmg0AVA2xI0w3zdGLshxo7vGbIW8MmvPkd0dV2O30Y9dO1+YjbLaTSz-ZdgdV0AMXRuoDj2A1FZDiVw9N8kHvcq2nYTNhL2NdE-9+9zWcOUNk+rkHymv1CR-ewgbnZAN5ZG6BiV4Geto+GtBub93CRLfzch1DGr0PiW1deLbOHDV8YO1zqhdPlMM750z6dvPYv84SzRn8iWBA2HZ3t9XQmI+el+xJ5NjXU3c6B-J99jdPZ209oRA64agZa3yY5IteHqoFjOKEONoBCyeEIn3xyDonQYDc4P50jk422x7130ISjROBC8hdGfwmqHZSiNFs7m93nIB2hnm6-FQAPDpnodSi0XB6TwvX5mqy8KY9WogfSh0YzWN+fme99hSAwAxopdSZAxGIFsu3qcGoiTPrKMGmI5KfhFIBI+CaDFEHglDTL-qCAAZaCWAbp4PPqEFXtalco5A7C3EzH1JAWRm7lvrXo-igIRI3qcM3qrtnozDGIRK3rGqgb3n3kgf-oATTH3oRCIuGlQfeoWD3udAvoDnUvwSvtOuvjRozlvjvrYBQcgOPkWGgWcFcJqqXh1qghXqKHOImKPvILQsBslJQDhK9LlLoYbAYVQEYeMDXnXkdNvtlKNnDv3PVIASQclPgaACgWocwA2nBk2jZogH1IAd3plFMEEa-mocIYvp4IAfPqAJ3paDvOYTjMwGkdoIRPlNhEsEtuGrbIwMYRAl3L4QUpQGYGobWvwYAYWIRBUaYGcO2knjdjfLgaYb4OMAAAwzjQCgBUA+GAH1FaCNGnC9EADU4xnhJRmUZRHg0AF01RR0AhZwdR8xiR12k6gWMW-mXanq0hzhJaEy6S8O9UUevsmR4wmR2RcAQY+RR0hRDAFBhEVC1mpeBxyU12iSOg8hmekASqdYagyoxOSwjctCVwrhdsshgU5B9e+8-xSyag0Wu0Ng+UhgBgyhqxqhVoHAGhL6YanW2aYJ4aEJxxZa1q0JQMi
+
+// Utilities
+type Nullable<T> = T | null;
+
+// Entities
+type Entity<Name extends string> = {
+	readonly [P in Name]: string;
+} & {
+	label: string;
+	name: string;
+};
+type Ref<Name extends string> = Entity<Name>;
+
+type Customer = Entity<'customer'> & {
+	region: Nullable<'Northam' | 'EMEA' | 'JAPAC' | 'Latam'>;
+	segment: Nullable<'Select' | 'Enterprise' | 'Corporate' | 'SMB'>;
+};
+
+type Workload = Entity<'workload'> & {
+	customer: Ref<'customer'>;
+	size: number | null;
+};
+
+// Validation
+type Path = ReadonlyArray<PropertyKey>;
+
+export interface Issue {
+	readonly message: string;
+	readonly path?: Path;
+	readonly code?: string;
+}
+
+export type Validated<Out> =
+	| { readonly data: Out; readonly validation?: never }
+	| { readonly data: unknown; readonly validation: Validation<Out> };
+
+export class Validation<Out> {
+	/**
+	 * Tests whether a result is invalid. Kind of weird that it’s the negative,
+	 * but most usage will be to handle a `Validated`’s invalid state.
+	 */
+	static is_invalid(result: unknown): result is { readonly validation: Validation<unknown> } {
+		return (
+			undefined !== result &&
+			null !== result &&
+			'object' === typeof result &&
+			'validation' in result &&
+			result.validation instanceof Validation
+		);
+	}
+
+	#issues: Issue[] = [];
+	/**
+	 * Namespace for existence/type checks. `is_*` methods check the primitive type and assert the type.
+	 * If it’s not, adds an issue to the current instance. `has_*` methods do the same,
+	 * but for a property on the `input`.
+	 */
+	readonly test;
+	constructor() {
+		const that = this;
+		this.test = {
+			is_object(
+				input: unknown,
+				message: Issue['message'],
+				property?: PropertyKey | Path,
+				code?: Issue['code']
+			): input is object {
+				if (undefined !== input && null !== input && 'object' === typeof input) return true;
+				that.add(message, property, code);
+				return false;
+			},
+			has_object<T extends object, K extends string>(
+				input: T,
+				key: K,
+				message: Issue['message'],
+				property: PropertyKey | Path = [key],
+				code?: Issue['code']
+			): input is T & Record<K, string> {
+				// Re: `(input as Record<string, unknown>)[property]`
+				// Every JavaScript object supports arbitrary string-key access at runtime. Read a property that doesn't exist and you get undefined, not a crash.
+				// `unknown` is the top type: it’s satisfied by literally any value, including `undefined`.
+				// So “indexing this object by any string produces `unknown`” is `true` for every object, always.
+				// This doesn’t assert anything false about runtime semantics, only bypassing a structural guarantee TypeScript can't otherwise verify at compile time.
+				if (
+					key in input &&
+					that.test.is_object((input as Record<string, unknown>)[key], message, property, code)
+				) {
+					return true;
+				}
+				return false;
+			},
+			is_string(
+				input: unknown,
+				message: Issue['message'],
+				property?: PropertyKey | Path,
+				code?: Issue['code']
+			): input is string {
+				if (undefined !== input && null !== input && 'string' === typeof input) return true;
+				that.add(message, property, code);
+				return false;
+			},
+			has_string<T extends object, K extends string>(
+				input: T,
+				key: K,
+				message: Issue['message'],
+				property: PropertyKey | Path = [key],
+				code?: Issue['code']
+			): input is T & Record<K, string> {
+				if (
+					key in input &&
+					that.test.is_string((input as Record<string, unknown>)[key], message, property, code)
+				) {
+					return true;
+				}
+				return false;
+			},
+			is_number(
+				input: unknown,
+				message: Issue['message'],
+				property?: PropertyKey | Path,
+				code?: Issue['code']
+			): input is number {
+				if (
+					undefined !== input &&
+					null !== input &&
+					'number' === typeof input &&
+					!Number.isNaN(input)
+				) {
+					return true;
+				}
+				that.add(message, property, code);
+				return false;
+			},
+			has_number<T extends object, K extends string>(
+				input: T,
+				key: K,
+				message: Issue['message'],
+				property: PropertyKey | Path = [key],
+				code?: Issue['code']
+			): input is T & Record<K, string> {
+				if (
+					key in input &&
+					that.test.is_number((input as Record<string, unknown>)[key], message, property, code)
+				) {
+					return true;
+				}
+				return false;
+			},
+			is_date(
+				input: unknown,
+				message: Issue['message'],
+				property?: PropertyKey | Path,
+				code?: Issue['code']
+			): input is number {
+				if (
+					undefined !== input &&
+					null !== input &&
+					input instanceof Date &&
+					!Number.isNaN(input.getTime())
+				) {
+					return true;
+				}
+				that.add(message, property, code);
+				return false;
+			},
+			has_date<T extends object, K extends string>(
+				input: T,
+				key: K,
+				message: Issue['message'],
+				property: PropertyKey | Path = [key],
+				code?: Issue['code']
+			): input is T & Record<K, string> {
+				if (
+					key in input &&
+					that.test.is_date((input as Record<string, unknown>)[key], message, property, code)
+				) {
+					return true;
+				}
+				return false;
+			}
+		};
+	}
+
+	add(message: Issue['message'], property?: PropertyKey | Path, code?: Issue['code']): this {
+		this.#issues.push({
+			message,
+			path: property ? [...(Array.isArray(property) ? property : [property])] : [],
+			code
+		});
+		return this;
+	}
+
+	/**
+	 * Adds `validation`’s issues to this instance’s issues at a path relative to `base_path`
+	 */
+	merge(validation: Validation<unknown>, base_path: Path = []): this {
+		for (const issue of validation) {
+			this.#issues.push({
+				message: issue.message,
+				path: [...base_path, ...(issue.path ?? [])],
+				code: issue.code
+			});
+		}
+		return this;
+	}
+
+	issues(path?: Path | string, code?: Issue['code']): ReadonlyArray<Issue> {
+		let found: ReadonlyArray<Issue> = this.#issues;
+		if (undefined !== path) {
+			const _path = 'string' === typeof path ? ('' === path ? [] : [path]) : path;
+			found = found.filter((issue) => {
+				if (_path.length !== issue.path?.length) return false;
+				for (let i = 0; i < _path.length; i++) {
+					if (_path[i] !== issue.path?.[i]) return false;
+				}
+				return true;
+			});
+		}
+		if (undefined !== code) {
+			found = found.filter((issue) => issue.code === code);
+		}
+		return found;
+	}
+
+	at(index: number): Issue | undefined {
+		return this.#issues.at(index);
+	}
+
+	first(path?: Path | string, code?: Issue['code']): Issue | undefined {
+		return this.issues(path, code)[0];
+	}
+
+	/**
+	 * Existence of any issues filtered by `path` and `code`
+	 */
+	has(path?: Path | string, code?: Issue['code']): boolean {
+		return this.issues(path, code).length > 0;
+	}
+
+	/**
+	 * Filters by `code`.
+	 *
+	 * @see Validation#has()
+	 */
+	coded(code?: Issue['code']): boolean {
+		return this.has(undefined, code);
+	}
+
+	/**
+	 * Loops through a `collection` and validates each item, adding to this instance’s issues.
+	 * If any are invalid, return the original `collection`. Otherwise, the validated output’s `data`.
+	 */
+	collect<In, Out>(
+		collection: Iterable<In>,
+		validate: (item: In) => Validated<Out>,
+		base_path: Path = []
+	): Iterable<In | Out> {
+		let dirty = false;
+		const output = Array.from(collection).map((item, index) => {
+			const result = validate(item);
+			if (Validation.is_invalid(result)) {
+				dirty = true;
+				this.merge(result.validation, [...base_path, index]);
+				return item;
+			}
+			return result.data;
+		});
+		if (dirty) return collection;
+		return output;
+	}
+
+	toJSON(): readonly Issue[] {
+		return this.#issues;
+	}
+
+	static fromJSON(json: any): Validation<unknown> {
+		return new Validation().merge(json);
+	}
+
+	[Symbol.iterator]() {
+		return this.#issues[Symbol.iterator]();
+	}
+
+	get length(): number {
+		return this.#issues.length;
+	}
+
+	/**
+	 * Human-friendly output
+	 */
+	toString(): string {
+		return (
+			this.#issues
+				.map((issue) => `${issue.message} (${issue.path ? issue.path.join(' > ') : ''})`)
+				.join('\n') + `\n(${this.length})`
+		);
+	}
+}
+
+function validate_ref<Name extends string>(input: unknown, type: Name): Validated<Ref<Name>> {
+	const validation = new Validation<Ref<Name>>();
+	const output: Partial<Ref<Name>> = {};
+
+	if (validation.test.is_object(input, 'Ref must exist')) {
+		if (validation.test.has_string(input, type, 'Nope')) {
+			(output as Record<Name, string>)[type] = (input as Record<Name, unknown>)[type] as string;
+		}
+	}
+	if (validation.has()) {
+		return { validation, data: input };
+	}
+	return { data: output as Ref<Name> };
+}
+
+function validate_workload(input: unknown, is_new: boolean = false): Validated<Workload> {
+	const validation = new Validation<Workload>();
+	const output: Partial<Workload> = {};
+
+	if (validation.test.is_object(input, 'Workload must exist')) {
+		// workload
+		if (is_new) {
+			if ('workload' in input && input.workload) {
+				// WARN: Oddball negation case
+				validation.add('An new workload cannot have an identity', 'workload');
+			} else {
+				// @ts-expect-error New instances must have a `null` identifier. This will be provided by the database.
+				output.workload = null;
+			}
+		} else {
+			if (
+				validation.test.has_string(input, 'workload', 'An existing workload must have an identity')
+			) {
+				// @ts-expect-error Internal backdoor to set the partial’s identifier
+				output.workload = input.workload;
+			}
+		}
+		// name
+		if (validation.test.has_string(input, 'name', 'Name is required')) {
+			output.name = input.name.trim();
+		}
+		// label
+		if (validation.test.has_string(input, 'label', 'Label is required')) {
+			output.label = input.label.trim();
+		}
+		// customer
+		if (validation.test.has_object(input, 'customer', 'A workload must have a customer')) {
+			const customer = validate_ref<'customer'>(input.customer, 'customer');
+			if (Validation.is_invalid(customer)) {
+				validation.merge(customer.validation, ['customer']);
+			} else {
+				output.customer = customer.data;
+			}
+		}
+	}
+
+	if (validation.has()) {
+		return { data: input, validation };
+	}
+	return { data: output as Workload };
+}
+
+function unmarshall_workload(input: Record<string, unknown>): unknown {
+	const pending: Record<string, unknown> = { ...input };
+	if ('customer' in input) pending.customer = { customer: input.customer };
+	return pending;
+}
+
+const api = {
+	create_workload(input: unknown): Validated<Workload> {
+		const workload = validate_workload(input, true);
+		if (Validation.is_invalid(workload)) {
+			return workload;
+		}
+		/* This is all the stuff that the database will populate/re-hydrate */
+		// @ts-expect-error IDs are read-only from the consumer’s perspective
+		workload.data.workload = 'NEW WORKLOAD';
+		workload.data.customer.name = 'Acme Corp.';
+		workload.data.customer.label = 'acme_corp';
+		return workload;
+	}
+};
+
+// Tests
+const workload_valid: Workload = {
+	workload: '1',
+	name: 'valid',
+	label: 'valid',
+	customer: {
+		customer: 'A',
+		name: 'A',
+		label: 'a'
+	},
+	size: null
+};
+
+/*
+console.clear();
+
+console.log('Output…');
+console.assert(!Validation.is_invalid(validate_workload(workload_valid)));
+console.assert(Validation.is_invalid(validate_workload({})));
+
+const form = new FormData();
+form.set('name', 'Workload 1');
+form.set('label', 'workload_1');
+form.set('customer', '12345678');
+
+console.log(unmarshall_workload(Object.fromEntries(form)));
+console.log(api.create_workload(unmarshall_workload(Object.fromEntries(form))));
+*/
