@@ -30,10 +30,25 @@ export interface Issue {
 	readonly path?: Path;
 	readonly code?: string;
 }
+type Issueish = Issue['message'] | Issue;
 
 export type Validated<Out> =
 	| { readonly data: Out; readonly validation?: never }
 	| { readonly data: unknown; readonly validation: Validation<Out> };
+
+interface Constraint {
+	issue: Issueish;
+}
+interface CustomConstraint {
+	validate: (input: unknown) => Validation<unknown>;
+}
+
+interface StringConstraints {
+	length?: { min?: number; max?: number } & Constraint;
+	match?: { regexp: RegExp } & Constraint;
+	list?: { values: Iterable<string> } & Constraint;
+	custom?: CustomConstraint;
+}
 
 export class Validation<Out> {
 	/**
@@ -60,6 +75,7 @@ export class Validation<Out> {
 	constructor() {
 		const that = this;
 		this.test = {
+			/*
 			is_object(
 				input: unknown,
 				message: Issue['message'],
@@ -90,31 +106,62 @@ export class Validation<Out> {
 				}
 				return false;
 			},
+			*/
 			is_string(
 				input: unknown,
-				message: Issue['message'],
-				property?: PropertyKey | Path,
-				code?: Issue['code']
+				issue: Issueish,
+				constraints: StringConstraints = {}
 			): input is string {
-				if (undefined !== input && null !== input && 'string' === typeof input) return true;
-				that.add(message, property, code);
-				return false;
+				if (undefined === input || null === input || 'string' !== typeof input) {
+					// TODO: path and code too
+					that.add(issue);
+					return false;
+				}
+				const local = new Validation();
+
+				// length
+				if (constraints.length) {
+					if (
+						input.length < (constraints.length.min ?? Number.NEGATIVE_INFINITY) ||
+						input.length > (constraints.length.max ?? Number.POSITIVE_INFINITY)
+					) {
+						local.add(constraints.length.issue);
+					}
+				}
+				// match
+				if (constraints.match) {
+					if (!constraints.match.regexp.test(input)) {
+						local.add(constraints.match.issue);
+					}
+				}
+				// list
+				if (constraints.list) {
+					if (!new Set(constraints.list.values).has(input)) {
+						local.add(constraints.list.issue);
+					}
+				}
+				// custom
+				if (constraints.custom) {
+					local.merge(constraints.custom.validate(input));
+				}
+				that.merge(local);
+				return !local.has();
 			},
 			has_string<T extends object, K extends string>(
 				input: T,
 				key: K,
-				message: Issue['message'],
-				property: PropertyKey | Path = [key],
-				code?: Issue['code']
+				issue: Issueish,
+				constraints: StringConstraints = {}
 			): input is T & Record<K, string> {
 				if (
 					key in input &&
-					that.test.is_string((input as Record<string, unknown>)[key], message, property, code)
+					that.test.is_string((input as Record<string, unknown>)[key], issue, constraints)
 				) {
 					return true;
 				}
 				return false;
-			},
+			}
+			/*
 			is_number(
 				input: unknown,
 				message: Issue['message'],
@@ -179,15 +226,23 @@ export class Validation<Out> {
 				}
 				return false;
 			}
+			*/
 		};
 	}
 
-	add(message: Issue['message'], property?: PropertyKey | Path, code?: Issue['code']): this {
+	__OLD_add(message: Issue['message'], property?: PropertyKey | Path, code?: Issue['code']): this {
 		this.#issues.push({
 			message,
 			path: property ? [...(Array.isArray(property) ? property : [property])] : [],
 			code
 		});
+		return this;
+	}
+	add(...issues: Issueish[]): this {
+		for (const issue of issues) {
+			if ('string' === typeof issue) this.#issues.push({ message: issue, path: [] });
+			else this.#issues.push(issue);
+		}
 		return this;
 	}
 
@@ -298,6 +353,7 @@ export class Validation<Out> {
 	}
 }
 
+/*
 function validate_ref<Name extends string>(input: unknown, type: Name): Validated<Ref<Name>> {
 	const validation = new Validation<Ref<Name>>();
 	const output: Partial<Ref<Name>> = {};
@@ -372,7 +428,7 @@ const api = {
 		if (Validation.is_invalid(workload)) {
 			return workload;
 		}
-		/* This is all the stuff that the database will populate/re-hydrate */
+		// This is all the stuff that the database will populate/re-hydrate
 		// @ts-expect-error IDs are read-only from the consumer’s perspective
 		workload.data.workload = 'NEW WORKLOAD';
 		workload.data.customer.name = 'Acme Corp.';
