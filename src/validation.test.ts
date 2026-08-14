@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Validation } from './validation';
+import { Validation, type Validated } from './validation';
 
 describe('test.is_object', () => {
 	it('accepts a plain object and records no issues', () => {
@@ -107,6 +107,15 @@ describe('test.is_string', () => {
 		const validation = new Validation();
 		const ok = validation.test.is_string('abc', 'must be a string', {
 			length: { min: 1, max: 5, issue: 'wrong length' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('treats an unset length maximum as unbounded', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('a fairly long string', 'must be a string', {
+			length: { min: 1, issue: 'too short' }
 		});
 		expect(ok).toBe(true);
 		expect(validation.has()).toBe(false);
@@ -258,6 +267,15 @@ describe('test.is_number', () => {
 		expect(validation.first()?.message).toBe('too large');
 	});
 
+	it('treats an unset range maximum as unbounded', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(1_000_000, 'must be a number', {
+			range: { min: 1, issue: 'too small' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
 	it('enforces a list-of-values constraint', () => {
 		const validation = new Validation();
 		const ok = validation.test.is_number(4, 'must be a number', {
@@ -265,6 +283,15 @@ describe('test.is_number', () => {
 		});
 		expect(ok).toBe(false);
 		expect(validation.first()?.message).toBe('not an allowed value');
+	});
+
+	it('passes when the value is in the allowed list', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(2, 'must be a number', {
+			list: { values: [1, 2, 3], issue: 'not an allowed value' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
 	});
 
 	it('merges issues from a custom validator', () => {
@@ -563,5 +590,203 @@ describe('shallow nested objects', () => {
 	it('reports every missing field across levels', () => {
 		const { validation } = validate_workload({ customer: {} });
 		expect(validation.length).toBe(3); // workload name, customer name, customer label
+	});
+});
+
+describe('add', () => {
+	it('accepts a plain string message, defaulting to the root path', () => {
+		const validation = new Validation();
+		validation.add('a problem');
+		expect(validation.first()).toEqual({ message: 'a problem', path: [] });
+	});
+
+	it('accepts a full Issue object, preserving its path and code', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a problem', path: ['name'], code: 'required' });
+		expect(validation.first()).toEqual({
+			message: 'a problem',
+			path: ['name'],
+			code: 'required'
+		});
+	});
+
+	it('accepts multiple issues, mixing strings and Issue objects, in one call', () => {
+		const validation = new Validation();
+		validation.add('first', { message: 'second', path: ['name'] });
+		expect(validation.length).toBe(2);
+		expect(validation.at(0)?.message).toBe('first');
+		expect(validation.at(1)?.message).toBe('second');
+	});
+});
+
+describe('at', () => {
+	it('returns the issue at a given index', () => {
+		const validation = new Validation();
+		validation.add('first', 'second');
+		expect(validation.at(0)?.message).toBe('first');
+		expect(validation.at(1)?.message).toBe('second');
+	});
+
+	it('returns undefined for an out-of-bounds index', () => {
+		const validation = new Validation();
+		validation.add('only issue');
+		expect(validation.at(5)).toBeUndefined();
+	});
+});
+
+describe('filtering by code', () => {
+	function setup(): Validation<unknown> {
+		const validation = new Validation();
+		validation.add(
+			{ message: 'required', path: ['name'], code: 'required' },
+			{ message: 'too short', path: ['name'], code: 'length' },
+			{ message: 'required', path: ['label'], code: 'required' }
+		);
+		return validation;
+	}
+
+	it('has(path, code) matches only issues with that code at that path', () => {
+		const validation = setup();
+		expect(validation.has(['name'], 'required')).toBe(true);
+		expect(validation.has(['name'], 'length')).toBe(true);
+		expect(validation.has(['name'], 'unknown-code')).toBe(false);
+	});
+
+	it('issues(undefined, code) matches by code across all paths', () => {
+		const validation = setup();
+		expect(validation.issues(undefined, 'required')).toHaveLength(2);
+	});
+
+	it('coded(code) is shorthand for has(undefined, code)', () => {
+		const validation = setup();
+		expect(validation.coded('required')).toBe(true);
+		expect(validation.coded('missing-code')).toBe(false);
+	});
+
+	it('first(path, code) returns the first matching issue', () => {
+		const validation = setup();
+		expect(validation.first(['name'], 'length')?.message).toBe('too short');
+	});
+});
+
+describe('path filtering', () => {
+	it('does not match a path of the same length but different segments', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a', path: ['name'] });
+		expect(validation.has(['label'])).toBe(false);
+		expect(validation.has(['name'])).toBe(true);
+	});
+
+	it('does not match nested paths that share a prefix but diverge later', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a', path: ['customer', 'name'] });
+		expect(validation.has(['customer', 'label'])).toBe(false);
+		expect(validation.has(['customer', 'name'])).toBe(true);
+	});
+
+	it('accepts a plain string as shorthand for a single-segment path', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a', path: ['name'] });
+		expect(validation.has('name')).toBe(true);
+		expect(validation.issues('name')).toHaveLength(1);
+		expect(validation.has('label')).toBe(false);
+	});
+
+	it('treats an empty string as the root path', () => {
+		const validation = new Validation();
+		validation.add('a'); // add() defaults string issues to path: []
+		expect(validation.has('')).toBe(true);
+	});
+});
+
+describe('issues without an explicit path', () => {
+	// `path` is optional on `Issue`, so externally-constructed issues (e.g. from
+	// hand-rolled JSON passed to `fromJSON`) may omit it entirely.
+	it('merge() defaults a pathless issue to just the base_path', () => {
+		const source = new Validation();
+		source.add({ message: 'external issue' });
+
+		const validation = new Validation();
+		validation.merge(source, ['scope']);
+		expect(validation.first()?.path).toEqual(['scope']);
+	});
+
+	it('toString() tolerates an issue with no path', () => {
+		const validation = new Validation();
+		validation.add({ message: 'no path issue' });
+		expect(validation.toString()).toBe('no path issue ()\n(1)');
+	});
+});
+
+describe('collect', () => {
+	function validate_item(item: unknown): Validated<string> {
+		const validation = new Validation<string>();
+		if (validation.test.is_string(item, 'must be a string')) {
+			return { data: item };
+		}
+		return { data: item, validation };
+	}
+
+	it('returns the validated output when every item is valid', () => {
+		const validation = new Validation();
+		const result = validation.collect(['a', 'b', 'c'], validate_item);
+		expect(result).toEqual(['a', 'b', 'c']);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('returns the original collection and records issues at an indexed path when items are invalid', () => {
+		const validation = new Validation();
+		const input = ['a', 42, 'c'];
+		const result = validation.collect(input, validate_item);
+		expect(result).toBe(input);
+		expect(validation.has()).toBe(true);
+		expect(validation.issues([1])).toHaveLength(1);
+		expect(validation.first([1])?.message).toBe('must be a string');
+	});
+
+	it('prefixes indexed issues with a base_path', () => {
+		const validation = new Validation();
+		validation.collect(['a', 42], validate_item, ['items']);
+		expect(validation.issues(['items', 1])).toHaveLength(1);
+	});
+});
+
+describe('serialization', () => {
+	it('toJSON returns the recorded issues', () => {
+		const validation = new Validation();
+		validation.add('first issue', { message: 'second issue', path: ['name'] });
+		expect(validation.toJSON()).toEqual([
+			{ message: 'first issue', path: [] },
+			{ message: 'second issue', path: ['name'] }
+		]);
+	});
+
+	it('JSON.stringify uses toJSON automatically', () => {
+		const validation = new Validation();
+		validation.add('an issue');
+		expect(JSON.parse(JSON.stringify(validation))).toEqual([{ message: 'an issue', path: [] }]);
+	});
+
+	it('fromJSON rehydrates a Validation from a serialized issue list', () => {
+		const validation = new Validation();
+		validation.add('first issue', { message: 'second issue', path: ['name'] });
+		const serialized = JSON.parse(JSON.stringify(validation));
+
+		const rehydrated = Validation.fromJSON(serialized);
+		expect(rehydrated.length).toBe(2);
+		expect(rehydrated.issues(['name'])).toHaveLength(1);
+	});
+});
+
+describe('toString', () => {
+	it('formats issues as a human-readable summary', () => {
+		const validation = new Validation();
+		validation.add('First problem', { message: 'Second problem', path: ['name'] });
+		expect(validation.toString()).toBe('First problem ()\nSecond problem (name)\n(2)');
+	});
+
+	it('reports a count of zero when there are no issues', () => {
+		const validation = new Validation();
+		expect(validation.toString()).toBe('\n(0)');
 	});
 });
