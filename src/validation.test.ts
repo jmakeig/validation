@@ -203,6 +203,120 @@ describe('test.has_string', () => {
 	});
 });
 
+describe('test.is_number', () => {
+	it('accepts a number and records no issues', () => {
+		const validation = new Validation();
+		expect(validation.test.is_number(42, 'must be a number')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it.each([
+		['undefined', undefined],
+		['null', null],
+		['a string', '42'],
+		['an object', {}],
+		['NaN', NaN]
+	])('rejects %s and records the issue', (_label, value) => {
+		const validation = new Validation();
+		expect(validation.test.is_number(value, 'must be a number')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('must be a number');
+	});
+
+	it('accepts negative numbers, zero, and floats', () => {
+		const validation = new Validation();
+		for (const value of [-1, 0, 3.14]) {
+			expect(validation.test.is_number(value, 'must be a number')).toBe(true);
+		}
+		expect(validation.has()).toBe(false);
+	});
+
+	it('passes when the value is within range', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(5, 'must be a number', {
+			range: { min: 1, max: 10, issue: 'out of range' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('enforces a minimum range constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(0, 'must be a number', {
+			range: { min: 1, issue: 'too small' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('too small');
+	});
+
+	it('enforces a maximum range constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(11, 'must be a number', {
+			range: { max: 10, issue: 'too large' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('too large');
+	});
+
+	it('enforces a list-of-values constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(4, 'must be a number', {
+			list: { values: [1, 2, 3], issue: 'not an allowed value' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('not an allowed value');
+	});
+
+	it('merges issues from a custom validator', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(42, 'must be a number', {
+			custom: {
+				validate: () => new Validation().add('custom failure')
+			}
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('custom failure');
+	});
+});
+
+describe('test.has_number', () => {
+	it('accepts an object with a matching number property', () => {
+		const validation = new Validation();
+		expect(validation.test.has_number({ size: 3 }, 'size', 'size is required')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('rejects an object whose property is the wrong type', () => {
+		const validation = new Validation();
+		expect(validation.test.has_number({ size: '3' }, 'size', 'size must be a number')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('size must be a number');
+	});
+
+	it('rejects an object missing the property entirely', () => {
+		const validation = new Validation();
+		expect(validation.test.has_number({}, 'size', 'size is required')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('size is required');
+	});
+
+	it('applies constraints to the property value', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_number({ size: 0 }, 'size', 'size is required', {
+				range: { min: 1, issue: 'size too small' }
+			})
+		).toBe(false);
+		expect(validation.first()?.message).toBe('size too small');
+	});
+
+	it('records the property name as the issue path', () => {
+		const validation = new Validation();
+		validation.test.has_number({}, 'size', 'size is required');
+		expect(validation.first()?.path).toEqual(['size']);
+	});
+});
+
 describe('multiple constraints', () => {
 	it('records one issue per failing constraint', () => {
 		const validation = new Validation();
@@ -263,6 +377,20 @@ describe('multiple constraints', () => {
 		});
 		expect(ok).toBe(false);
 		expect(validation.issues(['name'])).toHaveLength(2);
+	});
+
+	it('is_number records one issue per failing constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_number(0, 'must be a number', {
+			range: { min: 1, issue: 'too small' },
+			list: { values: [2, 4, 6], issue: 'not an allowed value' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.length).toBe(2);
+		expect(validation.issues().map((issue) => issue.message)).toEqual([
+			'too small',
+			'not an allowed value'
+		]);
 	});
 });
 

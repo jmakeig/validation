@@ -32,6 +32,12 @@ interface ObjectConstraints {
 	custom?: CustomConstraint;
 }
 
+interface NumberConstraints {
+	range?: { min?: number; max?: number } & Constraint;
+	list?: { values: Iterable<number> } & Constraint;
+	custom?: CustomConstraint;
+}
+
 export class Validation<Out> {
 	/**
 	 * Tests whether a result is invalid. Kind of weird that it’s the negative,
@@ -178,40 +184,70 @@ export class Validation<Out> {
 				local.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
 				that.merge(local, [key]);
 				return !local.has();
-			}
-			/*
+			},
+			/**
+			 * @param input What’s being validated.
+			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
+			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
+			 * @param constraints Optional declarative validation rules. These are ANDed together.
+			 * @returns A type guard that `input` is a `number` (excluding `NaN`).
+			 */
 			is_number(
 				input: unknown,
-				message: Issue['message'],
-				property?: PropertyKey | Path,
-				code?: Issue['code']
+				issue: Issueish,
+				constraints: NumberConstraints = {}
 			): input is number {
 				if (
-					undefined !== input &&
-					null !== input &&
-					'number' === typeof input &&
-					!Number.isNaN(input)
+					undefined === input ||
+					null === input ||
+					'number' !== typeof input ||
+					Number.isNaN(input)
 				) {
-					return true;
+					that.add(issue);
+					return false;
 				}
-				that.add(message, property, code);
-				return false;
+				const local = new Validation();
+
+				// range
+				if (constraints.range) {
+					if (
+						input < (constraints.range.min ?? Number.NEGATIVE_INFINITY) ||
+						input > (constraints.range.max ?? Number.POSITIVE_INFINITY)
+					) {
+						local.add(constraints.range.issue);
+					}
+				}
+				// list
+				if (constraints.list) {
+					if (!new Set(constraints.list.values).has(input)) {
+						local.add(constraints.list.issue);
+					}
+				}
+				// custom
+				if (constraints.custom) {
+					local.merge(constraints.custom.validate(input));
+				}
+				that.merge(local);
+				return !local.has();
 			},
+			/**
+			 * Delegates to `is_number` against a scratch `Validation` instance, then merges its
+			 * issues (the missing/wrong-type check, plus any constraint failures) into this
+			 * instance scoped under `key` — so every issue produced for this property, however
+			 * many constraints fired, lands at the same `[key]` path.
+			 */
 			has_number<T extends object, K extends string>(
 				input: T,
 				key: K,
-				message: Issue['message'],
-				property: PropertyKey | Path = [key],
-				code?: Issue['code']
-			): input is T & Record<K, string> {
-				if (
-					key in input &&
-					that.test.is_number((input as Record<string, unknown>)[key], message, property, code)
-				) {
-					return true;
-				}
-				return false;
-			},
+				issue: Issueish,
+				constraints: NumberConstraints = {}
+			): input is T & Record<K, number> {
+				const local = new Validation();
+				local.test.is_number((input as Record<string, unknown>)[key], issue, constraints);
+				that.merge(local, [key]);
+				return !local.has();
+			}
+			/*
 			is_date(
 				input: unknown,
 				message: Issue['message'],
