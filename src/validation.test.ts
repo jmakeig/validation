@@ -8,23 +8,27 @@ describe('test.is_object', () => {
 		expect(validation.has()).toBe(false);
 	});
 
+	it('accepts a null-prototype object', () => {
+		const validation = new Validation();
+		expect(validation.test.is_object(Object.create(null), 'must be an object')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
 	it.each([
 		['undefined', undefined],
 		['null', null],
 		['a number', 42],
 		['a string', 'hello'],
-		['a boolean', true]
+		['a boolean', true],
+		['an array', []],
+		['a Date', new Date()],
+		['a Map', new Map()],
+		['a RegExp', /x/]
 	])('rejects %s and records the issue', (_label, value) => {
 		const validation = new Validation();
 		expect(validation.test.is_object(value, 'must be an object')).toBe(false);
 		expect(validation.has()).toBe(true);
 		expect(validation.first()?.message).toBe('must be an object');
-	});
-
-	it('accepts an array, since arrays are objects too', () => {
-		const validation = new Validation();
-		expect(validation.test.is_object([], 'must be an object')).toBe(true);
-		expect(validation.has()).toBe(false);
 	});
 
 	it('merges issues from a custom validator', () => {

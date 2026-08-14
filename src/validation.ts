@@ -73,14 +73,22 @@ export class Validation<Out> {
 			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
 			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
 			 * @param constraints Optional declarative validation rules. These are ANDed together.
-			 * @returns A type guard that `input` is a non-`null` object.
+			 * @returns A type guard that `input` is a plain object — i.e. something that looks like a
+			 *          `Record<PropertyKey, unknown>`. Arrays, `Date`, `Map`, `RegExp`, and other built-ins
+			 *          with their own special semantics are rejected, since none of them are a sensible
+			 *          shape for a FormData-derived nested value.
 			 */
 			is_object(
 				input: unknown,
 				issue: Issueish,
 				constraints: ObjectConstraints = {}
 			): input is Record<string, unknown> {
-				if (undefined === input || null === input || 'object' !== typeof input) {
+				if (
+					undefined === input ||
+					null === input ||
+					'object' !== typeof input ||
+					'[object Object]' !== Object.prototype.toString.call(input)
+				) {
 					that.add(issue);
 					return false;
 				}
