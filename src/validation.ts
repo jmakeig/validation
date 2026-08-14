@@ -38,6 +38,11 @@ interface NumberConstraints {
 	custom?: CustomConstraint;
 }
 
+interface DateConstraints {
+	range?: { min?: Date; max?: Date } & Constraint;
+	custom?: CustomConstraint;
+}
+
 export class Validation<Out> {
 	/**
 	 * Tests whether a result is invalid. Kind of weird that it’s the negative,
@@ -246,41 +251,59 @@ export class Validation<Out> {
 				local.test.is_number((input as Record<string, unknown>)[key], issue, constraints);
 				that.merge(local, [key]);
 				return !local.has();
-			}
-			/*
-			is_date(
-				input: unknown,
-				message: Issue['message'],
-				property?: PropertyKey | Path,
-				code?: Issue['code']
-			): input is number {
-				if (
-					undefined !== input &&
-					null !== input &&
-					input instanceof Date &&
-					!Number.isNaN(input.getTime())
-				) {
-					return true;
-				}
-				that.add(message, property, code);
-				return false;
 			},
+			/**
+			 * @param input What’s being validated.
+			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
+			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
+			 * @param constraints Optional declarative validation rules. These are ANDed together.
+			 * @returns A type guard that `input` is a valid `Date` (excluding `Invalid Date`).
+			 */
+			is_date(input: unknown, issue: Issueish, constraints: DateConstraints = {}): input is Date {
+				if (
+					undefined === input ||
+					null === input ||
+					!(input instanceof Date) ||
+					Number.isNaN(input.getTime())
+				) {
+					that.add(issue);
+					return false;
+				}
+				const local = new Validation();
+
+				// range
+				if (constraints.range) {
+					if (
+						(undefined !== constraints.range.min && input < constraints.range.min) ||
+						(undefined !== constraints.range.max && input > constraints.range.max)
+					) {
+						local.add(constraints.range.issue);
+					}
+				}
+				// custom
+				if (constraints.custom) {
+					local.merge(constraints.custom.validate(input));
+				}
+				that.merge(local);
+				return !local.has();
+			},
+			/**
+			 * Delegates to `is_date` against a scratch `Validation` instance, then merges its
+			 * issues (the missing/wrong-type check, plus any constraint failures) into this
+			 * instance scoped under `key` — so every issue produced for this property, however
+			 * many constraints fired, lands at the same `[key]` path.
+			 */
 			has_date<T extends object, K extends string>(
 				input: T,
 				key: K,
-				message: Issue['message'],
-				property: PropertyKey | Path = [key],
-				code?: Issue['code']
-			): input is T & Record<K, string> {
-				if (
-					key in input &&
-					that.test.is_date((input as Record<string, unknown>)[key], message, property, code)
-				) {
-					return true;
-				}
-				return false;
+				issue: Issueish,
+				constraints: DateConstraints = {}
+			): input is T & Record<K, Date> {
+				const local = new Validation();
+				local.test.is_date((input as Record<string, unknown>)[key], issue, constraints);
+				that.merge(local, [key]);
+				return !local.has();
 			}
-			*/
 		};
 	}
 

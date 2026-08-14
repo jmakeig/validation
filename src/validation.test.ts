@@ -317,6 +317,113 @@ describe('test.has_number', () => {
 	});
 });
 
+describe('test.is_date', () => {
+	it('accepts a Date and records no issues', () => {
+		const validation = new Validation();
+		expect(validation.test.is_date(new Date(), 'must be a date')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it.each([
+		['undefined', undefined],
+		['null', null],
+		['a string', '2024-01-01'],
+		['a number', Date.now()],
+		['an object', {}],
+		['an invalid Date', new Date(NaN)]
+	])('rejects %s and records the issue', (_label, value) => {
+		const validation = new Validation();
+		expect(validation.test.is_date(value, 'must be a date')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('must be a date');
+	});
+
+	it('passes when the date is within range', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_date(new Date('2024-06-01'), 'must be a date', {
+			range: { min: new Date('2024-01-01'), max: new Date('2024-12-31'), issue: 'out of range' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('enforces a minimum range constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_date(new Date('2023-01-01'), 'must be a date', {
+			range: { min: new Date('2024-01-01'), issue: 'too early' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('too early');
+	});
+
+	it('enforces a maximum range constraint', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_date(new Date('2025-01-01'), 'must be a date', {
+			range: { max: new Date('2024-12-31'), issue: 'too late' }
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('too late');
+	});
+
+	it('merges issues from a custom validator', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_date(new Date(), 'must be a date', {
+			custom: {
+				validate: () => new Validation().add('custom failure')
+			}
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('custom failure');
+	});
+});
+
+describe('test.has_date', () => {
+	it('accepts an object with a matching Date property', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_date({ created: new Date() }, 'created', 'created is required')
+		).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('rejects an object whose property is the wrong type', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_date({ created: '2024-01-01' }, 'created', 'created must be a date')
+		).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('created must be a date');
+	});
+
+	it('rejects an object missing the property entirely', () => {
+		const validation = new Validation();
+		expect(validation.test.has_date({}, 'created', 'created is required')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('created is required');
+	});
+
+	it('applies constraints to the property value', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_date(
+				{ created: new Date('2023-01-01') },
+				'created',
+				'created is required',
+				{
+					range: { min: new Date('2024-01-01'), issue: 'created too early' }
+				}
+			)
+		).toBe(false);
+		expect(validation.first()?.message).toBe('created too early');
+	});
+
+	it('records the property name as the issue path', () => {
+		const validation = new Validation();
+		validation.test.has_date({}, 'created', 'created is required');
+		expect(validation.first()?.path).toEqual(['created']);
+	});
+});
+
 describe('multiple constraints', () => {
 	it('records one issue per failing constraint', () => {
 		const validation = new Validation();
