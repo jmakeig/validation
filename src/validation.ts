@@ -307,14 +307,6 @@ export class Validation<Out> {
 		};
 	}
 
-	__OLD_add(message: Issue['message'], property?: PropertyKey | Path, code?: Issue['code']): this {
-		this.#issues.push({
-			message,
-			path: property ? [...(Array.isArray(property) ? property : [property])] : [],
-			code
-		});
-		return this;
-	}
 	add(...issues: Issueish[]): this {
 		for (const issue of issues) {
 			if ('string' === typeof issue) this.#issues.push({ message: issue, path: [] });
