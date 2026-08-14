@@ -1,6 +1,88 @@
 import { describe, expect, it } from 'vitest';
 import { Validation } from './validation';
 
+describe('test.is_object', () => {
+	it('accepts a plain object and records no issues', () => {
+		const validation = new Validation();
+		expect(validation.test.is_object({}, 'must be an object')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it.each([
+		['undefined', undefined],
+		['null', null],
+		['a number', 42],
+		['a string', 'hello'],
+		['a boolean', true]
+	])('rejects %s and records the issue', (_label, value) => {
+		const validation = new Validation();
+		expect(validation.test.is_object(value, 'must be an object')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('must be an object');
+	});
+
+	it('accepts an array, since arrays are objects too', () => {
+		const validation = new Validation();
+		expect(validation.test.is_object([], 'must be an object')).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('merges issues from a custom validator', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_object({}, 'must be an object', {
+			custom: {
+				validate: () => new Validation().add('custom failure')
+			}
+		});
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('custom failure');
+	});
+});
+
+describe('test.has_object', () => {
+	it('accepts an object with a matching object property', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_object({ customer: { name: 'Acme' } }, 'customer', 'customer is required')
+		).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('rejects an object whose property is the wrong type', () => {
+		const validation = new Validation();
+		expect(
+			validation.test.has_object({ customer: 'Acme' }, 'customer', 'customer must be an object')
+		).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('customer must be an object');
+	});
+
+	it('rejects an object missing the property entirely', () => {
+		const validation = new Validation();
+		expect(validation.test.has_object({}, 'customer', 'customer is required')).toBe(false);
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('customer is required');
+	});
+
+	it('records the property name as the issue path', () => {
+		const validation = new Validation();
+		validation.test.has_object({}, 'customer', 'customer is required');
+		expect(validation.first()?.path).toEqual(['customer']);
+	});
+
+	it('merges issues from a custom validator, scoped under the property path', () => {
+		const validation = new Validation();
+		const ok = validation.test.has_object({ customer: {} }, 'customer', 'customer is required', {
+			custom: {
+				validate: () => new Validation().add('custom failure')
+			}
+		});
+		expect(ok).toBe(false);
+		expect(validation.issues(['customer'])).toHaveLength(1);
+		expect(validation.first(['customer'])?.message).toBe('custom failure');
+	});
+});
+
 describe('test.is_string', () => {
 	it('accepts a string and records no issues', () => {
 		const validation = new Validation();

@@ -28,6 +28,10 @@ interface StringConstraints {
 	custom?: CustomConstraint;
 }
 
+interface ObjectConstraints {
+	custom?: CustomConstraint;
+}
+
 export class Validation<Out> {
 	/**
 	 * Tests whether a result is invalid. Kind of weird that it’s the negative,
@@ -53,38 +57,48 @@ export class Validation<Out> {
 	constructor() {
 		const that = this;
 		this.test = {
-			/*
+			/**
+			 * @param input What’s being validated.
+			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
+			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
+			 * @param constraints Optional declarative validation rules. These are ANDed together.
+			 * @returns A type guard that `input` is a non-`null` object.
+			 */
 			is_object(
 				input: unknown,
-				message: Issue['message'],
-				property?: PropertyKey | Path,
-				code?: Issue['code']
-			): input is object {
-				if (undefined !== input && null !== input && 'object' === typeof input) return true;
-				that.add(message, property, code);
-				return false;
+				issue: Issueish,
+				constraints: ObjectConstraints = {}
+			): input is Record<string, unknown> {
+				if (undefined === input || null === input || 'object' !== typeof input) {
+					that.add(issue);
+					return false;
+				}
+				const local = new Validation();
+
+				// custom
+				if (constraints.custom) {
+					local.merge(constraints.custom.validate(input));
+				}
+				that.merge(local);
+				return !local.has();
 			},
+			/**
+			 * Delegates to `is_object` against a scratch `Validation` instance, then merges its
+			 * issues (the missing/wrong-type check, plus any constraint failures) into this
+			 * instance scoped under `key` — so every issue produced for this property, however
+			 * many constraints fired, lands at the same `[key]` path.
+			 */
 			has_object<T extends object, K extends string>(
 				input: T,
 				key: K,
-				message: Issue['message'],
-				property: PropertyKey | Path = [key],
-				code?: Issue['code']
-			): input is T & Record<K, string> {
-				// Re: `(input as Record<string, unknown>)[property]`
-				// Every JavaScript object supports arbitrary string-key access at runtime. Read a property that doesn't exist and you get undefined, not a crash.
-				// `unknown` is the top type: it’s satisfied by literally any value, including `undefined`.
-				// So “indexing this object by any string produces `unknown`” is `true` for every object, always.
-				// This doesn’t assert anything false about runtime semantics, only bypassing a structural guarantee TypeScript can't otherwise verify at compile time.
-				if (
-					key in input &&
-					that.test.is_object((input as Record<string, unknown>)[key], message, property, code)
-				) {
-					return true;
-				}
-				return false;
+				issue: Issueish,
+				constraints: ObjectConstraints = {}
+			): input is T & Record<K, Record<string, unknown>> {
+				const local = new Validation();
+				local.test.is_object((input as Record<string, unknown>)[key], issue, constraints);
+				that.merge(local, [key]);
+				return !local.has();
 			},
-			*/
 
 			/**
 			 *

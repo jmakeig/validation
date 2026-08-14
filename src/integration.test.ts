@@ -3,9 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { Validation, type Validated } from './validation';
 
 // Domain types and end-to-end flow extracted from the commented-out sketch that used to
-// live at the bottom of validation.ts. `is_object`/`has_object` are still commented out
-// there too, so the object-existence guards below are done by hand (a plain typeof check)
-// instead of calling into the library for that part.
+// live at the bottom of validation.ts.
 
 type Nullable<T> = T | null;
 
@@ -27,17 +25,14 @@ type Workload = Entity<'workload'> & {
 	size: number | null;
 };
 
-function is_object(input: unknown): input is Record<string, unknown> {
-	return undefined !== input && null !== input && 'object' === typeof input;
-}
-
 function validate_ref<Name extends string>(input: unknown, type: Name): Validated<Ref<Name>> {
 	const validation = new Validation<Ref<Name>>();
-	const record = input as Record<string, unknown>;
 	const output: Partial<Ref<Name>> = {};
 
-	if (validation.test.has_string(record, type, `Ref must have a '${type}' identity`)) {
-		(output as Record<Name, string>)[type] = record[type] as string;
+	if (validation.test.is_object(input, `A '${type}' reference must exist`)) {
+		if (validation.test.has_string(input, type, `A '${type}' reference must have an identity`)) {
+			(output as Record<Name, string>)[type] = input[type] as string;
+		}
 	}
 
 	if (validation.has()) {
@@ -48,44 +43,43 @@ function validate_ref<Name extends string>(input: unknown, type: Name): Validate
 
 function validate_workload(input: unknown, is_new: boolean = false): Validated<Workload> {
 	const validation = new Validation<Workload>();
-	const record = input as Record<string, unknown>;
 	const output: Partial<Workload> = {};
 
-	// workload
-	if (is_new) {
-		if (record.workload) {
-			// WARN: Oddball negation case
-			validation.add({ message: 'A new workload cannot have an identity', path: ['workload'] });
+	if (validation.test.is_object(input, 'Workload must exist')) {
+		// workload
+		if (is_new) {
+			if (input.workload) {
+				// WARN: Oddball negation case
+				validation.add({ message: 'A new workload cannot have an identity', path: ['workload'] });
+			} else {
+				// @ts-expect-error New instances must have a `null` identifier. This will be provided by the database.
+				output.workload = null;
+			}
 		} else {
-			// @ts-expect-error New instances must have a `null` identifier. This will be provided by the database.
-			output.workload = null;
+			if (
+				validation.test.has_string(input, 'workload', 'An existing workload must have an identity')
+			) {
+				// @ts-expect-error Internal backdoor to set the partial’s identifier
+				output.workload = input.workload;
+			}
 		}
-	} else {
-		if (
-			validation.test.has_string(record, 'workload', 'An existing workload must have an identity')
-		) {
-			// @ts-expect-error Internal backdoor to set the partial’s identifier
-			output.workload = record.workload;
+		// name
+		if (validation.test.has_string(input, 'name', 'Name is required')) {
+			output.name = input.name.trim();
 		}
-	}
-	// name
-	if (validation.test.has_string(record, 'name', 'Name is required')) {
-		output.name = (record.name as string).trim();
-	}
-	// label
-	if (validation.test.has_string(record, 'label', 'Label is required')) {
-		output.label = (record.label as string).trim();
-	}
-	// customer
-	if (is_object(record.customer)) {
-		const customer = validate_ref<'customer'>(record.customer, 'customer');
-		if (Validation.is_invalid(customer)) {
-			validation.merge(customer.validation, ['customer']);
-		} else {
-			output.customer = customer.data;
+		// label
+		if (validation.test.has_string(input, 'label', 'Label is required')) {
+			output.label = input.label.trim();
 		}
-	} else {
-		validation.add({ message: 'A workload must have a customer', path: ['customer'] });
+		// customer
+		if (validation.test.has_object(input, 'customer', 'A workload must have a customer')) {
+			const customer = validate_ref<'customer'>(input.customer, 'customer');
+			if (Validation.is_invalid(customer)) {
+				validation.merge(customer.validation, ['customer']);
+			} else {
+				output.customer = customer.data;
+			}
+		}
 	}
 
 	if (validation.has()) {
