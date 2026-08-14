@@ -106,7 +106,11 @@ export class Validation<Out> {
 				constraints: ObjectConstraints = {}
 			): input is T & Record<K, Record<string, unknown>> {
 				const local = new Validation();
-				local.test.is_object((input as Record<string, unknown>)[key], issue, constraints);
+				if (undefined === input || null === input) {
+					local.add(issue);
+				} else {
+					local.test.is_object((input as Record<string, unknown>)[key], issue, constraints);
+				}
 				that.merge(local, [key]);
 				return !local.has();
 			},
@@ -186,7 +190,11 @@ export class Validation<Out> {
 				constraints: StringConstraints = {}
 			): input is T & Record<K, string> {
 				const local = new Validation();
-				local.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
+				if (undefined === input || null === input) {
+					local.add(issue);
+				} else {
+					local.test.is_string((input as Record<string, unknown>)[key], issue, constraints);
+				}
 				that.merge(local, [key]);
 				return !local.has();
 			},
@@ -248,7 +256,11 @@ export class Validation<Out> {
 				constraints: NumberConstraints = {}
 			): input is T & Record<K, number> {
 				const local = new Validation();
-				local.test.is_number((input as Record<string, unknown>)[key], issue, constraints);
+				if (undefined === input || null === input) {
+					local.add(issue);
+				} else {
+					local.test.is_number((input as Record<string, unknown>)[key], issue, constraints);
+				}
 				that.merge(local, [key]);
 				return !local.has();
 			},
@@ -300,7 +312,11 @@ export class Validation<Out> {
 				constraints: DateConstraints = {}
 			): input is T & Record<K, Date> {
 				const local = new Validation();
-				local.test.is_date((input as Record<string, unknown>)[key], issue, constraints);
+				if (undefined === input || null === input) {
+					local.add(issue);
+				} else {
+					local.test.is_date((input as Record<string, unknown>)[key], issue, constraints);
+				}
 				that.merge(local, [key]);
 				return !local.has();
 			}
@@ -316,10 +332,12 @@ export class Validation<Out> {
 	}
 
 	/**
-	 * Adds `validation`’s issues to this instance’s issues at a path relative to `base_path`
+	 * Adds `issues`’ issues to this instance’s issues at a path relative to `base_path`.
+	 * Accepts any `Iterable<Issue>` — a `Validation` instance qualifies via `Symbol.iterator`,
+	 * but so does a plain array, which is what makes `fromJSON` possible without an unsafe cast.
 	 */
-	merge(validation: Validation<unknown>, base_path: Path = []): this {
-		for (const issue of validation) {
+	merge(issues: Iterable<Issue>, base_path: Path = []): this {
+		for (const issue of issues) {
 			this.#issues.push({
 				message: issue.message,
 				path: [...base_path, ...(issue.path ?? [])],
@@ -373,7 +391,11 @@ export class Validation<Out> {
 
 	/**
 	 * Loops through a `collection` and validates each item, adding to this instance’s issues.
-	 * If any are invalid, return the original `collection`. Otherwise, the validated output’s `data`.
+	 * If any are invalid, return a snapshot of the original items. Otherwise, the validated output’s `data`.
+	 *
+	 * `collection` is only ever iterated once — the returned snapshot is what gets handed back on
+	 * the invalid path, rather than the original `collection`, so a one-shot `Iterable` (a generator,
+	 * say) doesn’t come back exhausted.
 	 */
 	collect<In, Out>(
 		collection: Iterable<In>,
@@ -381,7 +403,8 @@ export class Validation<Out> {
 		base_path: Path = []
 	): Iterable<In | Out> {
 		let dirty = false;
-		const output = Array.from(collection).map((item, index) => {
+		const items = Array.from(collection);
+		const output = items.map((item, index) => {
 			const result = validate(item);
 			if (Validation.is_invalid(result)) {
 				dirty = true;
@@ -390,7 +413,7 @@ export class Validation<Out> {
 			}
 			return result.data;
 		});
-		if (dirty) return collection;
+		if (dirty) return items;
 		return output;
 	}
 
@@ -398,8 +421,27 @@ export class Validation<Out> {
 		return this.#issues;
 	}
 
-	static fromJSON(json: any): Validation<unknown> {
-		return new Validation().merge(json);
+	static fromJSON<Out = unknown>(json: unknown): Validation<Out> {
+		if (!Array.isArray(json)) {
+			throw new TypeError('Malformed validation JSON: expected an array of issues');
+		}
+		const validation = new Validation<Out>();
+		json.forEach((item, index) => {
+			const local = new Validation();
+			if (
+				local.test.is_object(item, 'expected an object') &&
+				local.test.has_string(item, 'message', '"message" must be a string')
+			) {
+				validation.add({
+					message: item.message,
+					path: Array.isArray(item.path) ? item.path : [],
+					code: 'string' === typeof item.code ? item.code : undefined
+				});
+			} else {
+				throw new TypeError(`Malformed validation JSON at index ${index}: ${local.toString()}`);
+			}
+		});
+		return validation;
 	}
 
 	[Symbol.iterator]() {
@@ -416,7 +458,9 @@ export class Validation<Out> {
 	toString(): string {
 		return (
 			this.#issues
-				.map((issue) => `${issue.message} (${issue.path ? issue.path.join(' > ') : ''})`)
+				.map(
+					(issue) => `${issue.message} (${issue.path ? issue.path.map(String).join(' > ') : ''})`
+				)
 				.join('\n') + `\n(${this.length})`
 		);
 	}

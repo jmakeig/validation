@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { Validation, type Validated } from './validation';
+import { Validation, type Issue, type Validated } from './validation';
 
 describe('test.is_object', () => {
 	it('accepts a plain object and records no issues', () => {
@@ -451,6 +451,56 @@ describe('test.has_date', () => {
 	});
 });
 
+describe('has_* against a null or undefined container', () => {
+	// The type signature requires `T extends object`, but plain-JS callers get no
+	// compile-time protection — a null/undefined container must record an issue,
+	// not throw when the property is indexed.
+	it.each([
+		['null', null],
+		['undefined', undefined]
+	])('has_string does not throw when the container is %s', (_label, container) => {
+		const validation = new Validation();
+		expect(() =>
+			validation.test.has_string(container as unknown as object, 'name', 'name is required')
+		).not.toThrow();
+		expect(validation.has()).toBe(true);
+		expect(validation.first()?.message).toBe('name is required');
+	});
+
+	it.each([
+		['null', null],
+		['undefined', undefined]
+	])('has_number does not throw when the container is %s', (_label, container) => {
+		const validation = new Validation();
+		expect(() =>
+			validation.test.has_number(container as unknown as object, 'size', 'size is required')
+		).not.toThrow();
+		expect(validation.has()).toBe(true);
+	});
+
+	it.each([
+		['null', null],
+		['undefined', undefined]
+	])('has_date does not throw when the container is %s', (_label, container) => {
+		const validation = new Validation();
+		expect(() =>
+			validation.test.has_date(container as unknown as object, 'created', 'created is required')
+		).not.toThrow();
+		expect(validation.has()).toBe(true);
+	});
+
+	it.each([
+		['null', null],
+		['undefined', undefined]
+	])('has_object does not throw when the container is %s', (_label, container) => {
+		const validation = new Validation();
+		expect(() =>
+			validation.test.has_object(container as unknown as object, 'customer', 'customer is required')
+		).not.toThrow();
+		expect(validation.has()).toBe(true);
+	});
+});
+
 describe('multiple constraints', () => {
 	it('records one issue per failing constraint', () => {
 		const validation = new Validation();
@@ -734,14 +784,27 @@ describe('collect', () => {
 		expect(validation.has()).toBe(false);
 	});
 
-	it('returns the original collection and records issues at an indexed path when items are invalid', () => {
+	it('returns a snapshot of the original items and records issues at an indexed path when items are invalid', () => {
 		const validation = new Validation();
 		const input = ['a', 42, 'c'];
 		const result = validation.collect(input, validate_item);
-		expect(result).toBe(input);
+		expect(result).toEqual(input);
 		expect(validation.has()).toBe(true);
 		expect(validation.issues([1])).toHaveLength(1);
 		expect(validation.first([1])?.message).toBe('must be a string');
+	});
+
+	it('does not exhaust a one-shot Iterable, unlike returning the original reference would', () => {
+		function* items(): Generator<unknown> {
+			yield 'a';
+			yield 42;
+			yield 'c';
+		}
+
+		const validation = new Validation();
+		const result = validation.collect(items(), validate_item);
+		// If collect() had returned the original (spent) generator, a second read would come up empty.
+		expect(Array.from(result)).toEqual(['a', 42, 'c']);
 	});
 
 	it('prefixes indexed issues with a base_path', () => {
@@ -776,6 +839,101 @@ describe('serialization', () => {
 		expect(rehydrated.length).toBe(2);
 		expect(rehydrated.issues(['name'])).toHaveLength(1);
 	});
+
+	it('fromJSON can be typed explicitly for the rehydrated Validation', () => {
+		const rehydrated = Validation.fromJSON<{ name: string }>([{ message: 'x', path: [] }]);
+		expect(rehydrated).toBeInstanceOf(Validation);
+	});
+
+	// A malformed payload here means the library's own serialized output is corrupt or was
+	// never produced by this library at all — a programmer/integration bug, not a routine
+	// validation failure, so `fromJSON` throws rather than returning a Validation whose
+	// issues could be mistaken for real ones.
+	it.each([
+		['an object', { message: 'not an array' }],
+		['a string', 'not an array'],
+		['null', null],
+		['undefined', undefined]
+	])('fromJSON throws on a non-array top-level payload (%s)', (_label, json) => {
+		expect(() => Validation.fromJSON(json)).toThrow(
+			'Malformed validation JSON: expected an array of issues'
+		);
+	});
+
+	it('fromJSON throws on the first malformed array element, identifying its index', () => {
+		expect(() => Validation.fromJSON([{ message: 'ok' }, 42])).toThrow(
+			/Malformed validation JSON at index 1/
+		);
+	});
+
+	it('fromJSON throws when an element is missing a message', () => {
+		expect(() => Validation.fromJSON([{ path: ['name'] }])).toThrow(
+			/Malformed validation JSON at index 0/
+		);
+	});
+
+	it('defaults a missing or malformed path/code on an otherwise valid element', () => {
+		const validation = Validation.fromJSON([{ message: 'x', path: 'not-an-array', code: 42 }]);
+		expect(validation.toJSON()).toEqual([{ message: 'x', path: [], code: undefined }]);
+	});
+
+	it('preserves a well-formed path and code', () => {
+		const validation = Validation.fromJSON([{ message: 'x', path: ['name'], code: 'required' }]);
+		expect(validation.toJSON()).toEqual([{ message: 'x', path: ['name'], code: 'required' }]);
+	});
+});
+
+describe('fromJSON / toJSON round-trip', () => {
+	// Goes through the full cycle a real caller would: serialize, cross a JSON boundary
+	// (JSON.stringify/JSON.parse, as if sent over the wire or written to storage), then
+	// rehydrate — and checks the result is identical to the original, not just "close enough".
+	function roundtrip(validation: Validation<unknown>): readonly Issue[] {
+		const serialized = JSON.parse(JSON.stringify(validation));
+		return Validation.fromJSON(serialized).toJSON();
+	}
+
+	it('round-trips an empty Validation', () => {
+		const validation = new Validation();
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+		expect(roundtrip(validation)).toEqual([]);
+	});
+
+	it('round-trips a single root-path issue', () => {
+		const validation = new Validation();
+		validation.add('a problem');
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+	});
+
+	it('round-trips a nested-path issue', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a problem', path: ['customer', 'name'] });
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+	});
+
+	it('round-trips an issue with a code', () => {
+		const validation = new Validation();
+		validation.add({ message: 'a problem', path: ['name'], code: 'required' });
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+	});
+
+	it('round-trips issues produced by merge() (e.g. from nested has_* validators)', () => {
+		const validation = new Validation();
+		validation.test.has_string({}, 'name', 'name is required');
+		validation.test.has_number({ size: 'oops' }, 'size', 'size is required', {
+			range: { min: 1, issue: 'too small' }
+		});
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+	});
+
+	it('round-trips multiple mixed issues in one Validation', () => {
+		const validation = new Validation();
+		validation.add(
+			'root issue',
+			{ message: 'coded issue', path: ['label'], code: 'required' },
+			{ message: 'nested issue', path: ['customer', 'name'] }
+		);
+		expect(roundtrip(validation)).toEqual(validation.toJSON());
+	});
 });
 
 describe('toString', () => {
@@ -788,5 +946,13 @@ describe('toString', () => {
 	it('reports a count of zero when there are no issues', () => {
 		const validation = new Validation();
 		expect(validation.toString()).toBe('\n(0)');
+	});
+
+	it('does not throw when a path segment is a symbol', () => {
+		const validation = new Validation();
+		const tag = Symbol('tag');
+		validation.add({ message: 'a problem', path: [tag] });
+		expect(() => validation.toString()).not.toThrow();
+		expect(validation.toString()).toContain('a problem (Symbol(tag))');
 	});
 });
