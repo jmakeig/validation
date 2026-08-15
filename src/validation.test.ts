@@ -834,6 +834,70 @@ describe('collect', () => {
 	});
 });
 
+describe('delegate', () => {
+	function validate_item(item: unknown): Validated<string> {
+		const validation = new Validation<string>();
+		if (validation.test.is_string(item, 'must be a string')) {
+			return { data: item };
+		}
+		return { data: item, validation };
+	}
+
+	it("returns validate's output when the value is valid", () => {
+		const validation = new Validation();
+		const result = validation.delegate({ name: 'Ada' }, 'name', validate_item);
+		expect(result).toBe('Ada');
+		expect(validation.has()).toBe(false);
+	});
+
+	it('returns the raw value and merges its issues at [key] when invalid', () => {
+		const validation = new Validation();
+		const result = validation.delegate({ name: 42 }, 'name', validate_item);
+		expect(result).toBe(42);
+		expect(validation.has()).toBe(true);
+		expect(validation.issues(['name'])).toHaveLength(1);
+		expect(validation.first(['name'])?.message).toBe('must be a string');
+	});
+
+	it('passes key through to validate, preserving its literal type', () => {
+		const validation = new Validation();
+		let received: string | undefined;
+		validation.delegate({ name: 'Ada' }, 'name', (value, key) => {
+			received = key;
+			return { data: value };
+		});
+		expect(received).toBe('name');
+	});
+
+	it('does not require validate to trust the container’s declared type', () => {
+		interface Person {
+			name: unknown;
+		}
+		const person: Person = { name: 'Ada' };
+		const validation = new Validation();
+		// validate_item takes `unknown`, the same convention collect() enforces.
+		const result = validation.delegate(person, 'name', validate_item);
+		expect(result).toBe('Ada');
+	});
+
+	it('scopes issues from a nested validator under [key, ...]', () => {
+		function validate_customer(input: unknown): Validated<{ name: string }> {
+			const validation = new Validation<{ name: string }>();
+			if (
+				validation.test.is_object(input, 'must be an object') &&
+				validation.test.has_string(input, 'name', 'name is required')
+			) {
+				return { data: { name: input.name } };
+			}
+			return { data: input, validation };
+		}
+
+		const validation = new Validation();
+		validation.delegate({ customer: {} }, 'customer', validate_customer);
+		expect(validation.issues(['customer', 'name'])).toHaveLength(1);
+	});
+});
+
 describe('serialization', () => {
 	it('toJSON returns the recorded issues', () => {
 		const validation = new Validation();

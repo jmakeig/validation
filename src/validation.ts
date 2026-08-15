@@ -430,6 +430,30 @@ export class Validation<Out> {
 		return output;
 	}
 
+	/**
+	 * Hands off validation of `input[key]` to `validate`, merging its issues into this
+	 * instance at `[key]` if invalid — the single-value counterpart to `collect()`. Unlike
+	 * `collect()`, whose defining feature is the iterable, the point here is the hand-off
+	 * itself: `key` is how the value is located and how its issues get scoped, not the
+	 * reason the method exists.
+	 *
+	 * Returns `validate`’s output `data` when valid, or the raw (unvalidated) value at `key`
+	 * when invalid.
+	 */
+	delegate<T extends object, K extends string, Out>(
+		input: T,
+		key: K,
+		validate: (value: unknown, key: K) => Validated<Out>
+	): unknown | Out {
+		const value = (input as Record<string, unknown>)[key];
+		const result = validate(value, key);
+		if (Validation.is_invalid(result)) {
+			this.merge(result.validation, [key]);
+			return value;
+		}
+		return result.data;
+	}
+
 	toJSON(): readonly Issue[] {
 		return this.#issues;
 	}

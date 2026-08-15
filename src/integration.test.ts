@@ -74,12 +74,9 @@ function validate_workload(input: unknown, is_new: boolean = false): Validated<W
 		}
 		// customer
 		if (validation.test.has_object(input, 'customer', 'A workload must have a customer')) {
-			const customer = validate_ref<'customer'>(input.customer, 'customer');
-			if (Validation.is_invalid(customer)) {
-				validation.merge(customer.validation, ['customer']);
-			} else {
-				output.customer = customer.data;
-			}
+			output.customer = validation.delegate(input, 'customer', (c, key) =>
+				validate_ref(c, key)
+			) as Ref<'customer'>;
 		}
 	}
 
