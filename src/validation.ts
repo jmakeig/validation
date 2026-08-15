@@ -404,10 +404,15 @@ export class Validation<Out> {
 	 * `collection` is only ever iterated once — the returned snapshot is what gets handed back on
 	 * the invalid path, rather than the original `collection`, so a one-shot `Iterable` (a generator,
 	 * say) doesn’t come back exhausted.
+	 *
+	 * `validate` takes `unknown`, not `In` — `In` only describes what `collection` claims to hold
+	 * (and what comes back out), not what `validate` is willing to trust. A validator shouldn’t
+	 * presume a pre-existing type is honest; it should check for itself, the same way `validate_*`
+	 * functions taking `unknown` do everywhere else in this library.
 	 */
 	collect<In, Out>(
 		collection: Iterable<In>,
-		validate: (item: In) => Validated<Out>,
+		validate: (item: unknown) => Validated<Out>,
 		base_path: Path = []
 	): Iterable<In | Out> {
 		let dirty = false;

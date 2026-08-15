@@ -816,6 +816,22 @@ describe('collect', () => {
 		validation.collect(['a', 42], validate_item, ['items']);
 		expect(validation.issues(['items', 1])).toHaveLength(1);
 	});
+
+	it('accepts a typed collection with a validator that only trusts unknown', () => {
+		// `In` (here, `{ sku: string }`) types the collection and the return value —
+		// it never constrains what `validate` is willing to accept. `validate` re-checks
+		// everything itself, the same way validate_ref/validate_workload do.
+		const products: ReadonlyArray<{ sku: string }> = [{ sku: 'A' }, { sku: 'B' }];
+
+		const validation = new Validation();
+		const result = validation.collect(products, validate_item);
+
+		// Every product fails `validate_item`'s "must be a string" check — the point here
+		// isn't that they pass, it's that TypeScript allows pairing a typed collection with
+		// an unknown-taking validator at all, and that collect() still behaves correctly.
+		expect(validation.has()).toBe(true);
+		expect(result).toEqual(products);
+	});
 });
 
 describe('serialization', () => {
