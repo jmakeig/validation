@@ -29,10 +29,11 @@ function validate_ref<Name extends string>(input: unknown, type: Name): Validate
 	const validation = new Validation<Ref<Name>>();
 	const output: Partial<Ref<Name>> = {};
 
-	if (validation.test.is_object(input, `A '${type}' reference must exist`)) {
-		if (validation.test.has_string(input, type, `A '${type}' reference must have an identity`)) {
-			(output as Record<Name, string>)[type] = input[type] as string;
-		}
+	if (
+		validation.test.is_object(input, `A '${type}' reference must exist`) &&
+		validation.test.has_string(input, type, `A '${type}' reference must have an identity`)
+	) {
+		(output as Record<Name, string>)[type] = input[type];
 	}
 
 	if (validation.has()) {
