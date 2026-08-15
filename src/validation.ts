@@ -72,7 +72,7 @@ export class Validation<Out> {
 	#issues: Issue[] = [];
 	/**
 	 * Namespace for existence/type checks. `is_*` methods check the primitive type and assert the type.
-	 * If it’s not, adds an issue to the current instance. `has_*` methods do the same,
+	 * If it’s not, it adds an issue to the current instance. `has_*` methods do the same,
 	 * but for a property on the `input`.
 	 */
 	readonly test;
@@ -84,7 +84,7 @@ export class Validation<Out> {
 			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
 			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
 			 * @param constraints Optional declarative validation rules. These are ANDed together.
-			 * @returns A type guard that `input` is a plain object — i.e. something that looks like a
+			 * @returns A type guard that `input` is a plain object — i.e., something that looks like a
 			 *          `Record<PropertyKey, unknown>`. Arrays, `Date`, `Map`, `RegExp`, and other built-ins
 			 *          with their own special semantics are rejected, since none of them are a sensible
 			 *          shape for a FormData-derived nested value.
@@ -136,23 +136,23 @@ export class Validation<Out> {
 
 			/**
 			 *
-			 * @param input What’s being validated. Note that validationdoesn]t do any parsing or formatting.
+			 * @param input What’s being validated. Note that validation doesn’t do any parsing or formatting.
 			 *              Those need to be handled up- and downstream, respectively.
 			 * @param issue The issue to capture if the validation fails. Generally this will just be a `string` message.
 			 *              Pass a full `Issue` (rather than just a message) if the caller needs a specific `path` or `code`.
 			 * @param constraints Optional declarative validation rules. These are ANDed together.
 			 * @returns A type guard that `input` is, in fact, a `string`. This is not _really_ true
-			 *          because that validation here can be much more strict than any `string`,
-			 *          e.g. length or regular expression matching. However, downstream should continue to treat
+			 *          because the validation here can be much more strict than any `string`,
+			 *          e.g., length or regular expression matching. However, downstream should continue to treat
 			 *          the `input` as invalid and thus `unknown` typed.
 			 *
 			 * @example ```
-			 *   if(validateion.test.is_string(input, '«This value» must exist and be a string')) {
+			 *   if (validation.test.is_string(input, '«This value» must exist and be a string')) {
 			 *     // Other validation or formatting logic can now safely assume that `input` is a `string`
 			 *   }
 			 * ```
 			 * @example ```
-			 *   if(validateion.test.is_string(input, '…'), {length: {min: 3, issue: 'At least 3'}}) {
+			 *   if (validation.test.is_string(input, '…', { length: { min: 3, issue: 'At least 3' } })) {
 			 *     // `input` is `string` and at least three characters in length
 			 *   }
 			 * ```
@@ -367,7 +367,7 @@ export class Validation<Out> {
 	}
 
 	/**
-	 * Adds `issues`’ issues to this instance’s issues at a path relative to `base_path`.
+	 * Adds `issues` to this instance’s issues at a path relative to `base_path`.
 	 * Accepts any `Iterable<Issue>` — a `Validation` instance qualifies via `Symbol.iterator`,
 	 * but so does a plain array, which is what makes `fromJSON` possible without an unsafe cast.
 	 */
@@ -409,7 +409,7 @@ export class Validation<Out> {
 	}
 
 	/**
-	 * Existence of any issues filtered by `path` and `code`
+	 * Existence of any issues filtered by `path` and `code`.
 	 */
 	has(path?: Path | string, code?: Issue['code']): boolean {
 		return this.issues(path, code).length > 0;
@@ -426,7 +426,7 @@ export class Validation<Out> {
 
 	/**
 	 * Loops through a `collection` and validates each item, adding to this instance’s issues.
-	 * If any are invalid, return a snapshot of the original items. Otherwise, the validated output’s `data`.
+	 * If any are invalid, return a snapshot of the original items. Otherwise, return the validated output’s `data`.
 	 *
 	 * `collection` is only ever iterated once — the returned snapshot is what gets handed back on
 	 * the invalid path, rather than the original `collection`, so a one-shot `Iterable` (a generator,
@@ -517,7 +517,7 @@ export class Validation<Out> {
 	}
 
 	/**
-	 * Human-friendly output
+	 * Human-friendly output.
 	 */
 	toString(): string {
 		return (
