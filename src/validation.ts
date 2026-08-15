@@ -22,7 +22,18 @@ interface CustomConstraint {
 }
 
 interface StringConstraints {
-	length?: { min?: number; max?: number } & Constraint;
+	length?: {
+		min?: number;
+		max?: number;
+		/**
+		 * How to measure `value`’s length against `min`/`max`. The default counts UTF-16
+		 * code units (JavaScript’s native `.length`), which over-counts astral characters
+		 * (emoji, etc.) — pass a grapheme-aware counter (e.g., via `Intl.Segmenter`) if a
+		 * field needs to be emoji-safe.
+		 * @default (value) => value.length
+		 */
+		counter?: (value: string) => number;
+	} & Constraint;
 	match?: { regexp: RegExp } & Constraint;
 	list?: { values: Iterable<string> } & Constraint;
 	custom?: CustomConstraint;
@@ -145,6 +156,19 @@ export class Validation<Out> {
 			 *     // `input` is `string` and at least three characters in length
 			 *   }
 			 * ```
+			 * @example ```
+			 *   // By default, an emoji counts as 2 toward `length` (a UTF-16 surrogate pair),
+			 *   // not 1. Pass a grapheme-aware `counter` (e.g., via `Intl.Segmenter`) to count
+			 *   // it the way a person would — as a single character.
+			 *   validation.test.is_string('😀', 'must be a string', {
+			 *     length: {
+			 *       max: 1,
+			 *       issue: 'too long',
+			 *       counter: (s) => [...new Intl.Segmenter().segment(s)].length
+			 *     }
+			 *   });
+			 *   // → true; '😀' counts as 1 grapheme cluster, so it satisfies max: 1
+			 * ```
 			 */
 			is_string(
 				input: unknown,
@@ -159,10 +183,13 @@ export class Validation<Out> {
 
 				// length
 				if (constraints.length) {
-					if (
-						input.length < (constraints.length.min ?? Number.NEGATIVE_INFINITY) ||
-						input.length > (constraints.length.max ?? Number.POSITIVE_INFINITY)
-					) {
+					const {
+						min = Number.NEGATIVE_INFINITY,
+						max = Number.POSITIVE_INFINITY,
+						counter = (value: string) => value.length
+					} = constraints.length;
+					const length = counter(input);
+					if (length < min || length > max) {
 						local.add(constraints.length.issue);
 					}
 				}

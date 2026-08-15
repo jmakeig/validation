@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { Validation, type Issue, type Validated } from './validation';
 
 describe('test.is_object', () => {
@@ -123,6 +123,36 @@ describe('test.is_string', () => {
 		});
 		expect(ok).toBe(true);
 		expect(validation.has()).toBe(false);
+	});
+
+	it('defaults to UTF-16 code-unit length, over-counting astral characters', () => {
+		const validation = new Validation();
+		const ok = validation.test.is_string('😀', 'must be a string', {
+			length: { max: 1, issue: 'too long' }
+		});
+		// A single emoji is one user-perceived character but two UTF-16 code units,
+		// so the default counter reports it as exceeding max: 1.
+		expect(ok).toBe(false);
+		expect(validation.first()?.message).toBe('too long');
+	});
+
+	it('accepts a custom counter, e.g. a grapheme-aware one', () => {
+		const validation = new Validation();
+		const graphemes = (value: string) => [...new Intl.Segmenter().segment(value)].length;
+		const ok = validation.test.is_string('😀', 'must be a string', {
+			length: { max: 1, counter: graphemes, issue: 'too long' }
+		});
+		expect(ok).toBe(true);
+		expect(validation.has()).toBe(false);
+	});
+
+	it('calls a custom counter exactly once per check', () => {
+		const validation = new Validation();
+		const counter = vi.fn((value: string) => value.length);
+		validation.test.is_string('abc', 'must be a string', {
+			length: { min: 1, max: 5, counter, issue: 'wrong length' }
+		});
+		expect(counter).toHaveBeenCalledTimes(1);
 	});
 
 	it('enforces a minimum length constraint', () => {
